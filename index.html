@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>청년층 제주 관광 동향</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="loading" class="loading">데이터를 불러오는 중입니다… (인기 장소 데이터 약 22MB)</div>
+<main class="wrap" id="app" hidden>
+
+  <!-- 1. 제목 -->
+  <section class="card head" id="sec-head">
+    <div class="sec-title"><span class="num">1</span><h1>청년층 제주 관광 동향</h1></div>
+    <p class="question">청년층은 제주에서 어떤 여행을 하고 있을까? — 20대 방문 추이, 지역별 특성, 검색어·온라인 후기의 관심 주제</p>
+    <dl class="meta">
+      <dt>분석 기간</dt><dd id="meta-period"></dd>
+      <dt>데이터 출처</dt><dd>제주 관광 데이터 엑셀 7종(입도 관광객·연령대별 방문·읍면동 방문객·인기 장소·비짓제주 검색어 등), 온라인 후기(네이버 블로그 검색 API), 행정동 경계(vuski/admdongkor, CC BY 4.0)</dd>
+      <dt>분석 대상</dt><dd>20대 방문객(연령대별 방문 데이터) / 전체 관광객(지역·장소·검색어 데이터 — 연령 구분 없음)</dd>
+    </dl>
+  </section>
+
+  <!-- 2. 필터 -->
+  <section class="card" id="sec-filter">
+    <div class="sec-title"><span class="num">2</span><h2>필터 영역</h2><button id="f-reset" class="btn-ghost">초기화</button></div>
+    <div class="filters">
+      <label>기간 시작<select id="f-start"></select></label>
+      <label>기간 끝<select id="f-end"></select></label>
+      <label>연령대<select id="f-age"></select></label>
+      <label>성별<select id="f-sex"><option value="all">전체</option><option value="M">남(M)</option><option value="W">여(W)</option></select></label>
+      <label>시군구<select id="f-sgg"></select></label>
+      <label>읍면동<select id="f-dong"></select></label>
+    </div>
+    <p class="hint">연령대·성별은 <b>연령대별 방문 데이터</b>에만 있어 ③④⑤에만 적용됩니다. 지역·장소·검색어 데이터에는 연령 정보가 없어 <b>전체 관광객 기준</b>입니다. 각 영역의 <span class="chip">적용 필터</span> 표시를 확인하세요.</p>
+  </section>
+
+  <!-- 3,4. 핵심 지표 -->
+  <div class="grid2">
+    <section class="card kpi" id="sec-kpi1">
+      <div class="sec-title"><span class="num">3</span><h2>핵심 지표 <small id="kpi1-sub">(20대 방문 규모)</small></h2></div>
+      <div class="chips" data-applies="기간,연령대,성별"></div>
+      <div class="kpi-main"><span class="kpi-icon">👥</span><div><div class="kpi-value" id="kpi1-value">-</div><div class="kpi-desc" id="kpi1-desc"></div></div></div>
+      <ul class="kpi-subs" id="kpi1-subs"></ul>
+    </section>
+    <section class="card kpi green" id="sec-kpi2">
+      <div class="sec-title"><span class="num">4</span><h2>핵심 지표 <small>(전년 동기 대비 증감률)</small></h2></div>
+      <div class="chips" data-applies="기간,연령대,성별"></div>
+      <div class="kpi-main"><span class="kpi-icon">📈</span><div><div class="kpi-value" id="kpi2-value">-</div><div class="kpi-desc" id="kpi2-desc"></div></div></div>
+      <ul class="kpi-subs" id="kpi2-subs"></ul>
+    </section>
+  </div>
+
+  <!-- 5. 방문 추이 -->
+  <section class="card" id="sec-trend">
+    <div class="sec-title"><span class="num">5</span><h2>방문 추이</h2></div>
+    <div class="chips" data-applies="기간,연령대,성별"></div>
+    <p class="sub" id="trend-sub">월별 · 연도별 방문객 수 변화</p>
+    <div class="chart" id="ch-trend"></div>
+    <details><summary>상세 표 (월별 실제 수치)</summary><div class="tbl-wrap" id="tbl-trend"></div></details>
+  </section>
+
+  <!-- 6,7 -->
+  <div class="grid2">
+    <section class="card" id="sec-region">
+      <div class="sec-title"><span class="num">6</span><h2>지역별 방문</h2>
+        <label class="inline">지표<select id="f-metric"><option value="tot">총 방문객수</option><option value="dom">내국인 방문객수</option><option value="for">외국인 방문객수</option></select></label></div>
+      <div class="chips" data-applies="기간,시군구,읍면동"></div>
+      <p class="sub">읍면동별 방문객 수 · 전체 관광객 기준(연령 구분 없음) · 지도를 누르면 읍면동 필터가 바뀝니다 · 드래그/휠로 이동·확대(북쪽 추자면 포함)</p>
+      <div class="region-grid">
+        <div class="chart map" id="ch-map"></div>
+        <div class="chart" id="ch-region-top"></div>
+      </div>
+      <details><summary>상세 표 (읍면동별 실제 수치)</summary><div class="tbl-wrap" id="tbl-region"></div></details>
+    </section>
+    <section class="card" id="sec-places">
+      <div class="sec-title"><span class="num">7</span><h2>인기 장소</h2></div>
+      <div class="chips" data-applies="기간,시군구,읍면동"></div>
+      <div class="filters small">
+        <label>카테고리<select id="f-pcat"></select></label>
+        <label>정렬 기준<select id="f-psort"><option value="tour">관광객 도착 수</option><option value="arr">도착건수</option></select></label>
+        <label>표시 개수<select id="f-ptop"><option>10</option><option>20</option><option>50</option></select></label>
+      </div>
+      <p class="sub">장소별 도착 수 순위 · 전체 관광객 기준(연령 구분 없음)</p>
+      <div class="chart" id="ch-places"></div>
+      <div class="tbl-wrap" id="tbl-places"></div>
+      <p class="note" id="places-note"></p>
+    </section>
+  </div>
+
+  <!-- 8,9 -->
+  <div class="grid2">
+    <section class="card" id="sec-search">
+      <div class="sec-title"><span class="num">8</span><h2>관광 검색어</h2></div>
+      <div class="chips" data-applies="기간,시군구"></div>
+      <div class="filters small">
+        <label>분류<select id="f-scat"></select></label>
+      </div>
+      <p class="sub">비짓제주 검색 '수치' 합계 기준 상위 장소명 · 전체 이용자 기준 · <b>검색 수치는 실제 방문이나 선호를 뜻하지 않습니다</b></p>
+      <div class="chart" id="ch-cloud"></div>
+      <div class="chart short" id="ch-search-bar"></div>
+      <details open><summary>키워드 빈도 표</summary><div class="tbl-wrap" id="tbl-search"></div></details>
+      <p class="note" id="search-note"></p>
+    </section>
+    <section class="card" id="sec-reviews">
+      <div class="sec-title"><span class="num">9</span><h2>온라인 후기</h2></div>
+      <div class="chips" data-applies="기간"></div>
+      <div class="filters small">
+        <label>분석 대상<select id="f-rset"><option value="20s">'20대' 언급 글</option><option value="all">수집 글 전체</option></select></label>
+        <label>작성 기간<select id="f-rperiod"><option value="dash">대시보드 기간 따름</option><option value="all">전체 작성 기간</option></select></label>
+      </div>
+      <p class="sub">주요 활동 · 만족 요인 · 불편 사항 (네이버 블로그 검색 결과의 제목·요약문 기준)</p>
+      <div id="reviews-body"></div>
+    </section>
+  </div>
+
+  <!-- 10. 분석 결과 -->
+  <section class="card" id="sec-summary">
+    <div class="sec-title"><span class="num">10</span><h2>분석 결과 요약</h2></div>
+    <p class="sub">현재 필터 기준으로 자동 계산됩니다. 해석은 데이터로 검증되지 않은 가설입니다.</p>
+    <div class="summary-grid">
+      <div class="sum-col"><h3>✅ 확인된 사실</h3><ul id="sum-facts"></ul></div>
+      <div class="sum-col"><h3>💡 해석 및 가설</h3><ul id="sum-hypo"></ul></div>
+      <div class="sum-col"><h3>➕ 추가 확인 사항</h3><ul id="sum-check"></ul></div>
+      <div class="sum-col"><h3>🎯 실행 제안</h3><ul id="sum-action"></ul></div>
+    </div>
+  </section>
+
+  <!-- 부록 -->
+  <section class="card" id="sec-data">
+    <div class="sec-title"><span class="num">i</span><h2>데이터 정보 · 집계 기준</h2></div>
+    <div class="tbl-wrap" id="tbl-files"></div>
+    <h3 class="h3">필터 적용 범위</h3>
+    <div class="tbl-wrap" id="tbl-apply"></div>
+    <h3 class="h3">지도 · 워드클라우드 집계 기준</h3>
+    <ul class="plain" id="method-list"></ul>
+    <details><summary>전처리 로그 (build_log)</summary><pre id="build-log"></pre></details>
+  </section>
+  <pre id="selftest" hidden></pre>
+</main>
+
+<script src="lib/echarts.min.js"></script>
+<script src="lib/echarts-wordcloud.min.js"></script>
+<script src="data/main_data.js"></script>
+<script src="data/search_data.js"></script>
+<script src="data/places_data.js"></script>
+<script>
+  // 후기 데이터는 수집한 경우에만 존재하므로 없을 때도 오류 없이 넘어가도록 동적으로 불러온다
+  (function () {
+    var s = document.createElement('script');
+    s.src = 'data/reviews_data.js';
+    s.onload = s.onerror = function () { var a = document.createElement('script'); a.src = 'app.js'; document.body.appendChild(a); };
+    document.body.appendChild(s);
+  })();
+</script>
+</body>
+</html>
